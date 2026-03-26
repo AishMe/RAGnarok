@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+.eggs/
+
+# Virtual environment
+venv/
+env/
+ENV/
+.venv/
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# ChromaDB local data
+.chroma/
+chroma_data/
+
+# Sentence-transformers model cache
+.cache/
+models/
+*.bin
+*.safetensors
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Docker
+*.log
+
+# Data files 
+data/
+!data/.gitkeep

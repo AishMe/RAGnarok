@@ -1,0 +1,47 @@
+# Virtual environment — huge, never needed in container
+venv/
+env/
+.venv/
+
+# Environment variables — secrets must never go into an image
+.env
+.env.local
+
+# Git history — not needed in container
+.git/
+.gitignore
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+
+# Local vector DB data — container has its own
+.chroma/
+chroma_data/
+
+# Model cache — container downloads its own
+.cache/
+models/
+
+# Frontend — separate service, not part of Python container
+frontend/
+node_modules/
+
+# Data files — mount as volume instead
+data/
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+*.log
+
+# Tests — not needed to run the app
+tests/
+
+# Docs
+README.md
+*.docx
+
