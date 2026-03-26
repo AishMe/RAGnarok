@@ -7,11 +7,13 @@ class Settings(BaseSettings):
     # OpenRouter / LLM
     openrouter_api_key: str = ""
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
-    llm_model: str = "meta-llama/llama-3.1-8b-instruct:free"
+    llm_model: str = "meta-llama/llama-4-scout:free"
     llm_temperature: float = 0.1
 
     # Embeddings
     embedding_model: str = "all-MiniLM-L6-v2"
+    embedding_device: str = "cpu"
+    embedding_cache_folder: str = ".cache/models"
 
     # ChromaDB
     chroma_host: str = "chroma"
@@ -20,8 +22,8 @@ class Settings(BaseSettings):
     # Redis
     redis_url: str = "redis://redis:6379/0"
 
-    # LangSmith (optional)
-    langchain_tracing_v2: str = "false"
+    # LangSmith
+    langchain_tracing_v2: str = "true"
     langchain_api_key: str = ""
     langchain_project: str = "ragnarok"
 
