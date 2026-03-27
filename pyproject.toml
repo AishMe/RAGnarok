@@ -41,3 +41,6 @@ build-backend = "setuptools.build_meta"
 where = ["."]
 include = ["api*", "config*", "ingestion*", "retrieval*", "generation*"]
 exclude = ["venv*", "tests*", "frontend*", "data*"]
+
+[tool.isort]
+profile = "black"
