@@ -74,7 +74,7 @@ def similarity_search(query: str, k: int = 4) -> list[Document]:
     results = store.similarity_search_with_relevance_scores(query, k=k)
     docs = []
     for doc, score in results:
-        doc.metadata["similarity_score"] = round(score, 4)
+        doc.metadata["similarity_score"] = round(max(score, 0.0), 4)  # clip negatives
         docs.append(doc)
     return docs
 
