@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     langchain_api_key: str = ""
     langchain_project: str = "ragnarok"
 
+    chunk_strategy: str = "recursive"
+    chunk_size: int = 512
+    chunk_overlap: int = 64
+
     # App
     app_env: str = "development"
     app_version: str = "0.1.0"
