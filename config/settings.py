@@ -16,8 +16,11 @@ class Settings(BaseSettings):
     embedding_cache_folder: str = ".cache/models"
 
     # ChromaDB
-    chroma_host: str = "chroma"
-    chroma_port: int = 8000
+    # chroma_host: str = "chroma"
+    # chroma_port: int = 8000
+
+    chroma_host: str = "localhost"  # default for local scripts
+    chroma_port: int = 8001  # external port (your Mac → Docker)
 
     # Redis
     redis_url: str = "redis://redis:6379/0"
