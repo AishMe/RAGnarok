@@ -77,10 +77,12 @@ def get_rag_chain_with_sources(k: int = 4):
 
     answer_chain = RAG_PROMPT | llm | parser
 
+    from generation.citations import build_rag_response, format_answer_with_citations
+
     def run(question: str) -> dict:
         from ingestion.vector_store import similarity_search
 
-        retrieved = similarity_search(question, k=4)
+        retrieved = similarity_search(question, k=k)
         context = format_docs(retrieved)
         answer = answer_chain.invoke(
             {
@@ -88,17 +90,25 @@ def get_rag_chain_with_sources(k: int = 4):
                 "question": question,
             }
         )
+        response = build_rag_response(answer, retrieved)
         return {
-            "answer": answer,
+            "answer": response.answer,
+            "has_answer": response.has_answer,
             "sources": [
                 {
-                    "filename": d.metadata.get("filename", "unknown"),
-                    "page": d.metadata.get("page", "?"),
-                    "score": d.metadata.get("similarity_score", 0),
-                    "preview": d.page_content[:200],
+                    "index": c.index,
+                    "filename": c.filename,
+                    "page": c.page,
+                    "score": c.score,
+                    "preview": c.preview,
+                    "source_url": c.source_url,
+                    "doc_type": c.doc_type,
                 }
-                for d in retrieved
+                for c in response.citations
             ],
+            "formatted": format_answer_with_citations(
+                response.answer, response.citations
+            ),
         }
 
     return run
