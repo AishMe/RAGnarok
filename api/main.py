@@ -141,4 +141,6 @@ async def ingest_url(url: str):
 
 @app.get("/api/stats")
 async def stats():
-    return collection_stats()
+    from ingestion.cache import cache_stats
+
+    return {**collection_stats(), **cache_stats()}

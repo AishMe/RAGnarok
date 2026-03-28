@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from config.settings import settings
+from ingestion.cache import invalidate_query_cache
 from ingestion.chunker import get_chunker
 from ingestion.loaders import load_json_records, load_pdf_folder, load_urls
 from ingestion.vector_store import add_documents, collection_stats
@@ -103,4 +104,9 @@ def run_ingestion(
         f"Ingestion complete: {total_added} new chunks added. "
         f"Total in store: {stats['total_chunks']}"
     )
+
+    if any(r.chunks_added > 0 for r in results):
+        invalidate_query_cache()
+        logger.info("Query cache invalidated after new ingestion")
+
     return results

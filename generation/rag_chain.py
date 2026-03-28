@@ -80,8 +80,16 @@ def get_rag_chain_with_sources(k: int = 4):
     from generation.citations import build_rag_response, format_answer_with_citations
 
     def run(question: str) -> dict:
+        from ingestion.cache import get_cached_query, set_cached_query
         from ingestion.vector_store import similarity_search
 
+        # check cache first
+        cached = get_cached_query(question, k=k)
+        if cached:
+            cached["from_cache"] = True
+            return cached
+
+        # cache miss — run full RAG pipeline
         retrieved = similarity_search(question, k=k)
         context = format_docs(retrieved)
         answer = answer_chain.invoke(
@@ -91,9 +99,10 @@ def get_rag_chain_with_sources(k: int = 4):
             }
         )
         response = build_rag_response(answer, retrieved)
-        return {
+        result = {
             "answer": response.answer,
             "has_answer": response.has_answer,
+            "from_cache": False,
             "sources": [
                 {
                     "index": c.index,
@@ -110,5 +119,9 @@ def get_rag_chain_with_sources(k: int = 4):
                 response.answer, response.citations
             ),
         }
+        # only cache if we got a real answer
+        if response.has_answer:
+            set_cached_query(question, result, k=k)
+        return result
 
     return run

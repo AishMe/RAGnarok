@@ -23,6 +23,7 @@ class QueryResponse(BaseModel):
     has_answer: bool
     sources: list[SourceItem]
     session_id: str
+    from_cache: bool = False
 
 
 class IngestResponse(BaseModel):
