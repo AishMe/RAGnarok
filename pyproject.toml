@@ -12,7 +12,6 @@ dependencies = [
     "sentence-transformers==3.0.1",
     "transformers==4.44.2",
     "numpy>=1.24.0,<2.0.0",
-    "torch>=2.2.0",
     "chromadb>=0.5.0",
     "redis>=5.0.0",
     "pydantic-settings>=2.0.0",
