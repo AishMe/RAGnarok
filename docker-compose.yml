@@ -1,38 +1,121 @@
+###############################################################################
+# RAGnarok — Full v1 Stack                                                    #
+# Day 14: nginx reverse proxy + healthchecks + Railway-ready production profile
+###############################################################################
+
 services:
+
+  # ---------------------------------------------------------------------------
+  # FastAPI backend
+  # ---------------------------------------------------------------------------
   api:
     build: .
-    ports:
-      - "8000:8000"
+    restart: unless-stopped
     env_file: .env
     environment:
       - CHROMA_HOST=chroma
       - CHROMA_PORT=8000
       - REDIS_URL=redis://redis:6379/0
-      - HF_HOME=/app/.cache/huggingface
-      - TRANSFORMERS_CACHE=/app/.cache/huggingface
+      - HF_HOME=/tmp/huggingface
+      - TRANSFORMERS_CACHE=/tmp/huggingface
     depends_on:
-      - chroma
-      - redis
+      chroma:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
       - .:/app
+    expose:
+      - "8000"
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
 
+  # ---------------------------------------------------------------------------
+  # Next.js frontend
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost/api  # goes through nginx
+      - NODE_ENV=production
+    depends_on:
+      api:
+        condition: service_healthy
+    expose:
+      - "3000"
+    ports:
+      - "3000:3000"                  # direct access in dev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # Nginx reverse proxy  (Day 14)
+  # Route: /api/* → api:8000   /  /* → frontend:3000
+  # ---------------------------------------------------------------------------
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      api:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/nginx-health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    profiles:
+      - prod                         # only starts with: docker compose --profile prod up
+
+  # ---------------------------------------------------------------------------
+  # ChromaDB vector store
+  # ---------------------------------------------------------------------------
   chroma:
     image: chromadb/chroma:latest
+    restart: unless-stopped
     ports:
       - "8001:8000"
     environment:
       - IS_PERSISTENT=TRUE
       - PERSIST_DIRECTORY=/data
       - ANONYMIZED_TELEMETRY=FALSE
-    
     volumes:
       - chroma_data:/data
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/8000"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
+  # ---------------------------------------------------------------------------
+  # Redis — query cache + (future) Celery broker
+  # ---------------------------------------------------------------------------
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     ports:
       - "6379:6379"
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
     healthcheck:
@@ -40,6 +123,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
 volumes:
   chroma_data:

@@ -1,0 +1,28 @@
+# railway.toml — RAGnarok backend deployment config
+# Deploy to Railway: connect your GitHub repo, set env vars, done.
+# https://docs.railway.app
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "uvicorn api.main:app --host 0.0.0.0 --port $PORT"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+# Health check — Railway will wait for this before marking deployment live
+healthcheckPath = "/api/health"
+healthcheckTimeout = 120
+
+# ---
+# Required environment variables (set in Railway dashboard):
+#
+#   OPENROUTER_API_KEY     your OpenRouter key
+#   CHROMA_HOST            Railway private domain for the Chroma service
+#   CHROMA_PORT            8000 (internal)
+#   REDIS_URL              redis://... Railway Redis plugin URL
+#   LANGCHAIN_API_KEY      (optional) LangSmith tracing
+#   LANGCHAIN_TRACING_V2   true
+#   APP_ENV                production
+# ---
