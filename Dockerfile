@@ -15,6 +15,9 @@ RUN pip install --no-cache-dir \
     torch==2.2.2+cpu \
     --index-url https://download.pytorch.org/whl/cpu
 
+# Pre-download embedding model into the image at build time
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
+
 # Now install the rest of the project deps
 COPY pyproject.toml .
 RUN pip install --no-cache-dir .
