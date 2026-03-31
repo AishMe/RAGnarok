@@ -1,3 +1,6 @@
+from datetime import datetime
+from typing import Optional
+
 from pydantic import BaseModel
 
 
@@ -6,6 +9,8 @@ class QueryRequest(BaseModel):
     session_id: str = "default"
     k: int = 4
     use_memory: bool = False
+    doc_filter: Optional[list[str]] = None  # source values to restrict retrieval to
+    username: Optional[str] = None  # scopes ChromaDB search to this user only
 
 
 class SourceItem(BaseModel):
@@ -36,3 +41,27 @@ class HealthResponse(BaseModel):
     status: str
     version: str
     env: str
+
+
+class DocEntry(BaseModel):
+    id: str
+    name: str
+    original_name: str
+    type: str  # "pdf" | "url" | "youtube"
+    source: str
+    chunks: int
+    added_at: datetime
+
+
+class DocEntryCreate(BaseModel):
+    id: str
+    name: str
+    original_name: str
+    type: str
+    source: str
+    chunks: int
+    added_at: datetime
+
+
+class DocEntryRename(BaseModel):
+    name: str

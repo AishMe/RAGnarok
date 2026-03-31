@@ -1,6 +1,7 @@
 import logging
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
 from config.settings import settings
 from ingestion.cache import invalidate_query_cache
@@ -20,6 +21,13 @@ class IngestionResult:
     errors: list[str]
 
 
+def _tag_username(chunks, username: str):
+    """Stamp every chunk with the owner's username for isolation."""
+    for chunk in chunks:
+        chunk.metadata["username"] = username
+    return chunks
+
+
 def run_ingestion(
     pdf_folder: str | None = None,
     urls: list[str] | None = None,
@@ -27,15 +35,11 @@ def run_ingestion(
     json_content_key: str = "content",
     json_metadata_keys: list[str] | None = None,
     chunk_strategy: str | None = None,
+    username: Optional[str] = None,  # owner — stamped on every chunk
 ) -> list[IngestionResult]:
     """
-    Master ingestion function — loads from any/all sources, chunks, stores.
-    Each source returns its own IngestionResult so you know exactly what happened.
-
-    Production design decisions:
-    - Each source is independent — a failed URL doesn't stop PDF ingestion
-    - chunk_strategy defaults to settings.chunk_strategy (from .env)
-    - Returns results not exceptions — caller decides what to do with errors
+    Master ingestion function.
+    username is required in production so chunks are isolated per user.
     """
     strategy = chunk_strategy or settings.chunk_strategy
     chunker = get_chunker(strategy)
@@ -54,6 +58,8 @@ def run_ingestion(
             docs = load_pdf_folder(pdf_folder)
             result.docs_loaded = len(docs)
             chunks = chunker(docs)
+            if username:
+                chunks = _tag_username(chunks, username)
             result.chunks_created = len(chunks)
             result.chunks_added = add_documents(chunks)
         except Exception as e:
@@ -70,6 +76,8 @@ def run_ingestion(
             docs = load_urls(urls)
             result.docs_loaded = len(docs)
             chunks = chunker(docs)
+            if username:
+                chunks = _tag_username(chunks, username)
             result.chunks_created = len(chunks)
             result.chunks_added = add_documents(chunks)
         except Exception as e:
@@ -90,6 +98,8 @@ def run_ingestion(
             )
             result.docs_loaded = len(docs)
             chunks = chunker(docs)
+            if username:
+                chunks = _tag_username(chunks, username)
             result.chunks_created = len(chunks)
             result.chunks_added = add_documents(chunks)
         except Exception as e:
@@ -97,16 +107,13 @@ def run_ingestion(
             logger.error(f"JSON ingestion failed: {e}")
         results.append(result)
 
-    # ── Summary ───────────────────────────────────────────────────────────────
     total_added = sum(r.chunks_added for r in results)
     stats = collection_stats()
     logger.info(
-        f"Ingestion complete: {total_added} new chunks added. "
-        f"Total in store: {stats['total_chunks']}"
+        f"Ingestion complete: {total_added} new chunks. Total in store: {stats['total_chunks']}"
     )
 
     if any(r.chunks_added > 0 for r in results):
         invalidate_query_cache()
-        logger.info("Query cache invalidated after new ingestion")
 
     return results

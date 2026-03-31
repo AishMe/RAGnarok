@@ -23,6 +23,7 @@ dependencies = [
     "langchain-experimental>=0.0.60",
     "langchain-chroma>=0.1.2",
     "python-multipart>=0.0.9",
+    "youtube-transcript-api>=0.6.2",
 ]
 
 [project.optional-dependencies]
