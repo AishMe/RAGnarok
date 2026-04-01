@@ -153,25 +153,41 @@ def load_json_records(
     content_key: str,
     metadata_keys: list[str] | None = None,
     source_name: str = "api",
-) -> list[Document]:
+) -> list["Document"]:
     """
     Convert a list of dicts (from any REST API or JSON file) into Documents.
-    content_key: which dict key becomes the page_content
-    metadata_keys: which dict keys become metadata
 
-    Example:
-        data = requests.get("https://api.example.com/articles").json()
-        docs = load_json_records(data, content_key="body", metadata_keys=["title","author"])
+    IMPORTANT for YouTube: pass metadata_keys including "source", "doc_type", "title".
+    The loader will:
+    - Use doc_type from the record if present (so YouTube stays "youtube", not "api")
+    - Copy "source" to "source_url" so citations can link back to the video
     """
+    import hashlib
+
+    from langchain_core.documents import Document
+
     docs = []
     meta_keys = metadata_keys or []
     for record in records:
         content = str(record.get(content_key, ""))
         if not content.strip():
             continue
+
         metadata = {k: record.get(k) for k in meta_keys}
-        metadata["doc_type"] = "api"
-        metadata["source"] = source_name
+
+        # Preserve doc_type from record, fall back to "api"
+        metadata["doc_type"] = record.get("doc_type", source_name)
+
+        # Copy source → source_url so citation builder can find the URL
+        if "source" in metadata and metadata.get("source"):
+            metadata["source_url"] = metadata["source"]
+
+        metadata["source"] = metadata.get("source") or source_name
+
+        # Add content hash for deduplication
+        h = hashlib.md5(f"{metadata['source']}:{content[:200]}".encode()).hexdigest()
+        metadata["doc_hash"] = h
+
         doc = Document(page_content=content, metadata=metadata)
-        docs.append(_tag(doc, {}))
+        docs.append(doc)
     return docs
